@@ -119,6 +119,35 @@ class AccommodationApiTest extends TestCase
             ->assertJsonFragment(['field' => 'libelle', 'code' => 'RESIDENCE_LABEL_REQUIRED']);
     }
 
+    public function test_residence_update_also_updates_its_manager_information(): void
+    {
+        $residenceId = $this->createResidence();
+
+        $this->withToken($this->token)->putJson('/api/v1/residences', [
+            'id' => $residenceId,
+            'libelle' => 'Résidence mise à jour',
+            'adresse' => 'Darou Salam',
+            'telephoneResidence' => '338000099',
+            'prenom' => 'Fatou',
+            'nom' => 'Diop',
+            'telephone' => '779999999',
+            'whatsapp' => '789999999',
+        ])->assertOk()
+            ->assertJsonPath('responsable.prenom', 'Fatou')
+            ->assertJsonPath('responsable.nom', 'Diop')
+            ->assertJsonPath('responsable.username', '779999999')
+            ->assertJsonPath('responsable.telephone', '779999999')
+            ->assertJsonPath('responsable.whatsapp', '789999999');
+
+        $this->assertDatabaseHas('users', [
+            'prenom' => 'Fatou',
+            'nom' => 'Diop',
+            'username' => '779999999',
+            'telephone' => '779999999',
+            'whatsapp' => '789999999',
+        ]);
+    }
+
     public function test_unused_room_can_be_deleted(): void
     {
         [, , $room] = $this->createAccommodation();

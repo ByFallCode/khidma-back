@@ -26,6 +26,7 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/utilisateurs', [UtilisateurController::class, 'index']);
     Route::post('/utilisateurs', [UtilisateurController::class, 'store']);
     Route::get('/utilisateurs/info', [UtilisateurController::class, 'account']);
+    Route::put('/utilisateurs/me', [UtilisateurController::class, 'updateOwnProfile']);
     Route::put('/utilisateurs/me/password', [UtilisateurController::class, 'changeOwnPassword']);
     Route::put('/utilisateurs/statut/{user}', [UtilisateurController::class, 'toggleStatus']);
     Route::put('/utilisateurs/{user}/password', [UtilisateurController::class, 'changePassword']);

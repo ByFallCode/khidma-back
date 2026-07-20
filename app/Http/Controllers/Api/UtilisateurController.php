@@ -7,8 +7,10 @@ use App\Http\Requests\Api\ChangeOwnPasswordRequest;
 use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\PaginationRequest;
 use App\Http\Requests\Api\StoreUserRequest;
+use App\Http\Requests\Api\UpdateOwnProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\JwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -59,6 +61,21 @@ class UtilisateurController extends Controller
     public function account(Request $request): JsonResponse
     {
         return response()->json((new UserResource($request->user()))->resolve());
+    }
+
+    public function updateOwnProfile(UpdateOwnProfileRequest $request, JwtService $jwt): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+        $data['username'] = $data['telephone'];
+        $user->update($data);
+
+        $user = $user->fresh();
+
+        return response()->json([
+            'user' => (new UserResource($user))->resolve(),
+            'token' => $jwt->issue($user),
+        ]);
     }
 
     public function toggleStatus(User $user): JsonResponse

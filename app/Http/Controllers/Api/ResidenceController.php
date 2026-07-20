@@ -38,6 +38,7 @@ class ResidenceController extends Controller
                 'prenom' => $data['prenom'],
                 'nom' => $data['nom'],
                 'telephone' => $data['telephone'],
+                'whatsapp' => $data['whatsapp'] ?? null,
             ]);
 
             $resource = null;
@@ -66,13 +67,23 @@ class ResidenceController extends Controller
     {
         $data = $request->validated();
 
-        $residence = Residence::findOrFail($data['id']);
-        $residence->update([
-            'libelle' => $data['libelle'],
-            'adresse' => $data['adresse'],
-            'telephone_residence' => $data['telephoneResidence'],
-            'responsable_id' => $data['responsable']['id'],
-        ]);
+        $residence = DB::transaction(function () use ($data) {
+            $residence = Residence::with('responsable')->findOrFail($data['id']);
+            $residence->update([
+                'libelle' => $data['libelle'],
+                'adresse' => $data['adresse'],
+                'telephone_residence' => $data['telephoneResidence'],
+            ]);
+            $residence->responsable?->update([
+                'prenom' => $data['prenom'],
+                'nom' => $data['nom'],
+                'telephone' => $data['telephone'],
+                'username' => $data['telephone'],
+                'whatsapp' => $data['whatsapp'] ?? null,
+            ]);
+
+            return $residence;
+        });
 
         return response()->json((new ResidenceResource($this->load($residence)))->resolve());
     }

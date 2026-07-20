@@ -60,4 +60,72 @@ class AuthenticationApiTest extends TestCase
             ->assertJsonPath('number', 0)
             ->assertJsonPath('totalElements', 1);
     }
+
+    public function test_authenticated_user_can_update_their_personal_information(): void
+    {
+        $user = User::create([
+            'username' => '770000002',
+            'password' => 'secret',
+            'account_type' => 'KHIDMA_AGENT',
+            'statut' => true,
+            'prenom' => 'Ancien',
+            'nom' => 'Nom',
+            'telephone' => '770000002',
+        ]);
+        $token = app(JwtService::class)->issue($user);
+
+        $response = $this->withToken($token)->putJson('/api/v1/utilisateurs/me', [
+            'prenom' => 'Nouveau',
+            'nom' => 'Profil',
+            'telephone' => '770000009',
+            'whatsapp' => '780000009',
+        ])->assertOk()
+            ->assertJsonPath('user.prenom', 'Nouveau')
+            ->assertJsonPath('user.nom', 'Profil')
+            ->assertJsonPath('user.username', '770000009')
+            ->assertJsonPath('user.telephone', '770000009')
+            ->assertJsonPath('user.whatsapp', '780000009')
+            ->assertJsonStructure(['token']);
+
+        $this->withToken($response->json('token'))->getJson('/api/v1/utilisateurs/info')
+            ->assertOk()
+            ->assertJsonPath('username', '770000009');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'username' => '770000009',
+            'telephone' => '770000009',
+        ]);
+    }
+
+    public function test_user_cannot_use_another_accounts_phone_number(): void
+    {
+        User::create([
+            'username' => '770000010',
+            'password' => 'secret',
+            'account_type' => 'ADMIN',
+            'statut' => true,
+            'prenom' => 'Autre',
+            'nom' => 'Compte',
+            'telephone' => '770000010',
+        ]);
+        $user = User::create([
+            'username' => '770000011',
+            'password' => 'secret',
+            'account_type' => 'KHIDMA_AGENT',
+            'statut' => true,
+            'prenom' => 'Agent',
+            'nom' => 'Test',
+            'telephone' => '770000011',
+        ]);
+
+        $this->withToken(app(JwtService::class)->issue($user))
+            ->putJson('/api/v1/utilisateurs/me', [
+                'prenom' => 'Agent',
+                'nom' => 'Test',
+                'telephone' => '770000010',
+                'whatsapp' => null,
+            ])->assertBadRequest()
+            ->assertJsonFragment(['USER_PHONE_ALREADY_USED']);
+    }
 }
