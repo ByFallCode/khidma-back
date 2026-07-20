@@ -78,6 +78,7 @@ Route::middleware('jwt.auth')->group(function () {
     Route::delete('/delegations/{delegation}', [DelegationController::class, 'destroy']);
 
     Route::post('/invites', [GuestController::class, 'store']);
+    Route::put('/invites/{guest}', [GuestController::class, 'update']);
     Route::delete('/invites/{guest}', [GuestController::class, 'destroy']);
 
     Route::post('/evenements', [EventController::class, 'store']);

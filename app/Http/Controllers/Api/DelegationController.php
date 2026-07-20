@@ -33,6 +33,16 @@ class DelegationController extends Controller
     {
         $data = $request->validated();
         $delegation = Delegation::findOrFail($data['id']);
+        $registered = $delegation->guests()->count();
+        if ($data['nombre'] < $registered) {
+            return response()->json([
+                'httpCode' => 400,
+                'code' => 'DELEGATION_SIZE_BELOW_REGISTERED',
+                'message' => 'DELEGATION_SIZE_BELOW_REGISTERED',
+                'errors' => [],
+                'validationErrors' => [],
+            ], 400);
+        }
         $delegation->update(['nom' => $data['nom'], 'nombre' => $data['nombre']]);
 
         return response()->json((new DelegationResource($this->load($delegation)))->resolve());

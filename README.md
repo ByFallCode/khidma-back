@@ -82,4 +82,34 @@ Les nouveaux modules ne doivent pas ajouter de méthode de type `toDto`, `fromDt
 9. Exécuter `php artisan optimize`.
 10. Vérifier les droits d’écriture sur `storage` et `bootstrap/cache`.
 
+### Mise en recette
+
+La recette doit utiliser une base et des secrets distincts de la production. Sur le serveur :
+
+```bash
+cp .env.recette.example .env
+php artisan key:generate
+```
+
+Renseigner ensuite `APP_URL`, `CORS_ALLOWED_ORIGINS`, les paramètres `DB_*` et une valeur
+`JWT_SECRET` longue et aléatoire. Ne jamais envoyer le fichier `.env` local sur le serveur.
+
+Pour chaque livraison en recette :
+
+```bash
+php artisan down
+composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+php artisan optimize:clear
+php artisan migrate --force
+php artisan optimize
+php artisan up
+```
+
+Le document root du sous-domaine d’API doit pointer vers `public`. Vérifier ensuite
+`GET /up`, puis `POST /api/v1/auth/login` avec un compte de recette.
+
+Le seeder crée un compte de développement (`777197482` / `admin`). Ne pas exécuter
+`php artisan db:seed` sur un serveur accessible publiquement sans changer immédiatement
+ce mot de passe.
+
 Consulter [MIGRATION.md](MIGRATION.md) pour l’état fonctionnel de la migration.

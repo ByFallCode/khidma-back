@@ -79,6 +79,55 @@ class GuestAndEventApiTest extends TestCase
         $this->assertDatabaseHas('guests', ['telephone' => '772000001', 'delegation_id' => $delegation->id]);
     }
 
+    public function test_guest_can_be_updated_without_changing_its_role(): void
+    {
+        $delegation = Delegation::create(['nom' => 'Thiès', 'nombre' => 4]);
+        $guest = $delegation->guests()->create([
+            ...$this->guest('Sokhna', 'Ndiaye', '772000001'),
+            'est_responsable' => true,
+        ]);
+
+        $this->withToken($this->token)->putJson("/api/v1/invites/{$guest->id}", [
+            ...$this->guest('Sokhna', 'Fall', '772000009'),
+        ])->assertOk()
+            ->assertJsonPath('nom', 'Fall')
+            ->assertJsonPath('telephone', '772000009')
+            ->assertJsonPath('estResponsable', true)
+            ->assertJsonPath('delegation.id', $delegation->id);
+
+        $this->assertDatabaseHas('guests', [
+            'id' => $guest->id,
+            'nom' => 'Fall',
+            'telephone' => '772000009',
+            'est_responsable' => true,
+            'delegation_id' => $delegation->id,
+        ]);
+    }
+
+    public function test_delegation_size_cannot_be_lower_than_registered_people(): void
+    {
+        $delegation = Delegation::create(['nom' => 'Dakar', 'nombre' => 4]);
+        $leader = $delegation->guests()->create([
+            ...$this->guest('Awa', 'Diop', '771000001'),
+            'est_responsable' => true,
+        ]);
+        $delegation->guests()->create([
+            ...$this->guest('Moussa', 'Fall', '771000002'),
+            'est_responsable' => false,
+        ]);
+
+        $this->withToken($this->token)->putJson('/api/v1/delegations', [
+            'id' => $delegation->id,
+            'nom' => $delegation->nom,
+            'nombre' => 1,
+            'chef' => $leader->toArray(),
+            'invites' => [],
+        ])->assertStatus(400)
+            ->assertJsonPath('code', 'DELEGATION_SIZE_BELOW_REGISTERED');
+
+        $this->assertDatabaseHas('delegations', ['id' => $delegation->id, 'nombre' => 4]);
+    }
+
     public function test_event_post_creates_and_updates_the_same_resource(): void
     {
         $created = $this->withToken($this->token)->postJson('/api/v1/evenements', [

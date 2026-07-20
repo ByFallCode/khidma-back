@@ -29,6 +29,20 @@ class GuestController extends Controller
         return response()->json((new GuestResource($guest))->resolve());
     }
 
+    public function update(GuestRequest $request, Guest $guest): JsonResponse
+    {
+        $data = $request->validated();
+        $guest->update([
+            'prenom' => $data['prenom'],
+            'nom' => $data['nom'],
+            'telephone' => $data['telephone'],
+            'adresse' => $data['adresse'] ?? null,
+            'email' => $data['email'] ?? null,
+        ]);
+
+        return response()->json((new GuestResource($guest->load('delegation')))->resolve());
+    }
+
     public function destroy(Guest $guest): JsonResponse
     {
         $this->deletionService->delete($guest);
